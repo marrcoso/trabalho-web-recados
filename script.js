@@ -3,6 +3,7 @@ class ModalRecado {
         this.modalEl = document.getElementById('myModal');
         this.btnAdd = document.getElementById('btnAdd');
         this.btnSave = document.getElementById('btnSave');
+        this.btnDelete = document.getElementById('btnDelete');
         this.messageEl = document.getElementById('message');
 
         this.modal = new bootstrap.Modal(this.modalEl);
@@ -13,6 +14,7 @@ class ModalRecado {
     initEvents() {
         this.btnAdd.addEventListener('click', () => this.openForNew());
         this.btnSave.addEventListener('click', () => this.save());
+        this.btnDelete.addEventListener('click', () => this.delete());
         document.querySelectorAll('#btnEdit, .btnEdit')
             .forEach(btn => btn.addEventListener('click', (e) => this.openForEdit(e.target)));
         this.modalEl.addEventListener('shown.bs.modal', () => this.messageEl.focus());
@@ -22,12 +24,14 @@ class ModalRecado {
     openForNew() {
         delete this.btnSave.dataset.id;
         this.messageEl.value = '';
+        this.btnDelete.disabled = true;
         this.modal.show();
     }
 
     openForEdit(btn) {
         this.btnSave.dataset.id = btn.dataset.id;
         this.messageEl.value = btn.dataset.mensagem;
+        this.btnDelete.disabled = false;
         this.modal.show();
     }
 
@@ -68,9 +72,44 @@ class ModalRecado {
         }
     }
 
+    async delete() {
+        const id = this.btnSave.dataset.id;
+
+        if (!id) {
+            alert("Nenhum recado selecionado para excluir.");
+            return;
+        }
+
+        this.btnDelete.disabled = true;
+        this.btnDelete.textContent = "Excluindo...";
+
+        try {
+            const resp = await fetch("recados.php", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id })
+            });
+
+            const data = await resp.json();
+
+            if (data.ok) {
+                this.modal.hide();
+                location.reload();
+            } else {
+                alert(data.error || "Erro ao excluir.");
+            }
+        } catch {
+            alert("Erro de rede ao excluir.");
+        } finally {
+            this.btnDelete.disabled = false;
+            this.btnDelete.textContent = "Excluir";
+        }
+    }
+
     reset() {
         delete this.btnSave.dataset.id;
         this.messageEl.value = '';
+        this.btnDelete.disabled = true;
     }
 }
 
@@ -110,7 +149,7 @@ class FavoritosManager {
     }
 
     async updateStatus(id, status) {
-        const resp = await fetch("models/toggle_favorite.php", {
+        const resp = await fetch("src/toggle_favorite.php", {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: `id=${id}&status=${status}`
@@ -135,12 +174,10 @@ class FavoritosManager {
         const outrosTitle = this.outrosSection.previousElementSibling;
         const parent = outrosTitle.parentNode;
 
-        // título
         const favTitle = document.createElement("div");
         favTitle.className = "mb-3 d-flex align-items-center justify-content-between";
         favTitle.innerHTML = "<h3 class='m-0'>Favoritos</h3>";
 
-        // container
         this.favoritosSection = document.createElement("div");
         this.favoritosSection.id = "favoritosContainer";
         this.favoritosSection.className = "row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3 mb-4";

@@ -16,36 +16,44 @@ $outros = $repo->nonFavorites();
     <script src="script.js"></script>
 </head>
 <body class="min-vh-100 d-flex flex-column">
-
+ 
+    <!-- modal -->
     <div id="myModal" class="modal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Novo Recado</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form>
-                    <div class="mb-3">
-                        <label for="message" class="form-label">Mensagem</label>
-                        <textarea class="form-control" id="message" rows="3" required></textarea>
+                <div class="modal-header">
+                    <h5 class="modal-title">Novo Recado</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="message" class="form-label">Mensagem</label>
+                            <textarea class="form-control" id="message" rows="3" required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                <div class="d-flex justify-content-between w-100">
+                    <button id="btnDelete" type="button" class="btn btn-danger">Excluir</button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button id="btnSave" type="button" class="btn btn-primary">Salvar</button>
                     </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button id="btnSave" type="button" class="btn btn-primary">Salvar</button>
-            </div>
-            </div>
+                </div>
+                </div>
+            </div>  
         </div>
     </div>
 
+    <!-- header -->
     <header class="border-bottom mb-4 p-3">
         <div class="container d-flex justify-content-center">
             <h1 class="m-0">Mural de Recados</h1>
         </div>
     </header>
 
+    <!-- main -->
     <main class="container flex-grow-1">
         <div class="d-flex justify-content-between mb-4 align-items-center">
             <h2 class="m-0">Recados</h2>
@@ -116,6 +124,7 @@ $outros = $repo->nonFavorites();
         <?php endif; ?>
     </main>
 
+    <!-- footer -->
     <footer class="border-top mt-4">
         <div class="container pt-3">
             <p>&copy; 2025 Mural de Recados</p>
