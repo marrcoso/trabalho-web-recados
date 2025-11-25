@@ -1,7 +1,8 @@
 <?php 
 require_once __DIR__ . '/repositories/RecadoRepository.php';
 $repo = new RecadoRepository();
-$recados = $repo->all();
+$favoritos = $repo->favorites();
+$outros = $repo->nonFavorites();
 ?>
 
 <!DOCTYPE html>
@@ -50,13 +51,48 @@ $recados = $repo->all();
             <h2 class="m-0">Recados</h2>
             <button id="btnAdd" class="btn btn-primary">Adicionar Recado</button>
         </div>
-            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-                <?php if (empty($recados)): ?>
-                    <div class="col">
-                        <div class="mt-5">Nenhum recado cadastrado ainda.</div>
-                    </div>
-                <?php else: ?>
-                    <?php foreach ($recados as $recado): ?>
+
+        <?php if (empty($favoritos) && empty($outros)): ?>
+            <div class="row">
+                <div class="col">
+                    <div class="mt-5">Nenhum recado cadastrado ainda.</div>
+                </div>
+            </div>
+        <?php else: ?>
+
+            <?php if (!empty($favoritos)): ?>
+                <div class="mb-3 d-flex align-items-center justify-content-between">
+                    <h3 class="m-0">Favoritos</h3>
+                </div>
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3 mb-4" id="favoritosContainer">
+                    <?php foreach ($favoritos as $recado): ?>
+                        <div class="col">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body">
+                                    <h5 class="card-title">Recado #<?php echo htmlspecialchars($recado->id); ?></h5>
+                                    <p class="card-text"><?php echo nl2br(htmlspecialchars($recado->mensagem)); ?></p>
+                                </div>
+                                <div class="card-footer bg-transparent d-flex justify-content-between align-items-center">
+                                    <small class="text-muted m-0"><?php echo date('d/m/Y', strtotime($recado->data_criacao)); ?></small>
+                                    <div class="d-flex gap-3">
+                                        <button class="btnFavorite pe-auto border-0 bg-transparent" data-id="<?php echo htmlspecialchars($recado->id); ?>" data-status="<?php echo htmlspecialchars($recado->status); ?>">
+                                            <img src="icons/<?= $recado->status == 1 ? 'star-fill.svg' : 'star.svg' ?>">
+                                        </button>
+                                        <button id="btnEdit" data-id="<?php echo htmlspecialchars($recado->id); ?>" data-mensagem="<?php echo htmlspecialchars($recado->mensagem, ENT_QUOTES); ?>" class="btn btn-sm btn-primary">Editar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+            <div class="mb-3 d-flex align-items-center justify-content-between">
+                <h3 class="m-0">Recados não favoritados</h3>
+            </div>
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3" id="outrosContainer">
+                <?php if (!empty($outros)): ?>
+                    <?php foreach ($outros as $recado): ?>
                         <div class="col">
                             <div class="card h-100 shadow-sm">
                                 <div class="card-body">
@@ -77,6 +113,7 @@ $recados = $repo->all();
                     <?php endforeach; ?>
                 <?php endif; ?>
             </div>
+        <?php endif; ?>
     </main>
 
     <footer class="border-top mt-4">

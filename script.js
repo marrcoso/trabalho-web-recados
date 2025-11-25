@@ -1,92 +1,171 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const myModal = document.getElementById('myModal');
-    const btnAdd = document.getElementById('btnAdd');
-    const btnSave = document.getElementById('btnSave');
-    const messageEl = document.getElementById('message');
-    const modal = new bootstrap.Modal(myModal);
+class ModalRecado {
+    constructor() {
+        this.modalEl = document.getElementById('myModal');
+        this.btnAdd = document.getElementById('btnAdd');
+        this.btnSave = document.getElementById('btnSave');
+        this.messageEl = document.getElementById('message');
 
-    btnAdd.addEventListener('click', () => {
-        delete btnSave.dataset.id;
-        messageEl.value = '';
-        modal.show();
-    });
+        this.modal = new bootstrap.Modal(this.modalEl);
 
-    btnSave.addEventListener('click', async () => {
-        const mensagem = messageEl.value.trim();
-        const id = btnSave.dataset.id || null;
-        const method = id ? 'PUT' : 'POST';
+        this.initEvents();
+    }
+
+    initEvents() {
+        this.btnAdd.addEventListener('click', () => this.openForNew());
+        this.btnSave.addEventListener('click', () => this.save());
+        document.querySelectorAll('#btnEdit, .btnEdit')
+            .forEach(btn => btn.addEventListener('click', (e) => this.openForEdit(e.target)));
+        this.modalEl.addEventListener('shown.bs.modal', () => this.messageEl.focus());
+        this.modalEl.addEventListener('hidden.bs.modal', () => this.reset());
+    }
+
+    openForNew() {
+        delete this.btnSave.dataset.id;
+        this.messageEl.value = '';
+        this.modal.show();
+    }
+
+    openForEdit(btn) {
+        this.btnSave.dataset.id = btn.dataset.id;
+        this.messageEl.value = btn.dataset.mensagem;
+        this.modal.show();
+    }
+
+    async save() {
+        const mensagem = this.messageEl.value.trim();
+        const id = this.btnSave.dataset.id || null;
 
         if (!mensagem) {
-            messageEl.focus();
+            this.messageEl.focus();
             return;
         }
 
-        btnSave.disabled = true;
-        btnSave.textContent = 'Salvando...';
+        const method = id ? "PUT" : "POST";
+
+        this.btnSave.disabled = true;
+        this.btnSave.textContent = "Salvando...";
 
         try {
-            const resp = await fetch('recados.php', {
+            const resp = await fetch("recados.php", {
                 method,
-                headers: { 'Content-Type': 'application/json' },
-                body: id
-                    ? JSON.stringify({ id, mensagem })
-                    : JSON.stringify({ mensagem })
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(id ? { id, mensagem } : { mensagem })
             });
 
             const data = await resp.json();
+
             if (data.ok) {
-                modal.hide();
+                this.modal.hide();
                 location.reload();
             } else {
-                alert(data.error);
+                alert(data.error || "Erro ao salvar.");
             }
         } catch {
-            alert('Erro de rede ao salvar');
+            alert("Erro de rede ao salvar.");
         } finally {
-            btnSave.disabled = false;
-            btnSave.textContent = 'Salvar';
+            this.btnSave.disabled = false;
+            this.btnSave.textContent = "Salvar";
         }
-    });
+    }
 
-    document.querySelectorAll('#btnEdit, .btnEdit').forEach(btn => {
-        btn.addEventListener('click', () => {
-            modal.show();
-            messageEl.value = btn.dataset.mensagem;
-            btnSave.dataset.id = btn.dataset.id;
+    reset() {
+        delete this.btnSave.dataset.id;
+        this.messageEl.value = '';
+    }
+}
+
+
+
+class FavoritosManager {
+    constructor() {
+        this.favoritosSection = document.querySelector("#favoritosContainer");
+        this.outrosSection = document.querySelector("#outrosContainer");
+
+        this.initEvents();
+    }
+
+    initEvents() {
+        document.querySelectorAll(".btnFavorite")
+            .forEach(btn => btn.addEventListener("click", () => this.toggle(btn)));
+    }
+
+    async toggle(btn) {
+        const id = btn.dataset.id;
+        const oldStatus = btn.dataset.status;
+        const newStatus = oldStatus === "1" ? 0 : 1;
+
+        const ok = await this.updateStatus(id, newStatus);
+        if (!ok) {
+            alert("Erro ao atualizar favorito");
+            return;
+        }
+
+        btn.dataset.status = newStatus;
+        btn.querySelector("img").src = newStatus
+            ? "icons/star-fill.svg"
+            : "icons/star.svg";
+
+        this.moveCard(btn, newStatus);
+        this.cleanupEmptyFavorites();
+    }
+
+    async updateStatus(id, status) {
+        const resp = await fetch("models/toggle_favorite.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: `id=${id}&status=${status}`
         });
-    });
 
-    document.querySelectorAll('.btnFavorite').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const id = btn.dataset.id;
-            let status = btn.dataset.status === '1' ? 0 : 1;
+        return (await resp.text()) === "1";
+    }
 
-            btn.dataset.status = status;
+    moveCard(btn, newStatus) {
+        const card = btn.closest(".col");
 
-            const img = btn.querySelector('img');
-            img.src = status == 1 ? 'icons/star-fill.svg' : 'icons/star.svg';
+        if (!this.favoritosSection) this.createFavoritesSection();
 
-            try {
-                const resp = await fetch('recados.php', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id, status })
-                });
+        if (newStatus == 1) {
+            this.favoritosSection.prepend(card);
+        } else {
+            this.outrosSection.prepend(card);
+        }
+    }
 
-                const data = await resp.json();
-                if (!data.ok) {
-                    alert(data.error);
-                }
+    createFavoritesSection() {
+        const outrosTitle = this.outrosSection.previousElementSibling;
+        const parent = outrosTitle.parentNode;
 
-            } catch (e) {
-                alert('Erro ao salvar favorito');
+        // título
+        const favTitle = document.createElement("div");
+        favTitle.className = "mb-3 d-flex align-items-center justify-content-between";
+        favTitle.innerHTML = "<h3 class='m-0'>Favoritos</h3>";
+
+        // container
+        this.favoritosSection = document.createElement("div");
+        this.favoritosSection.id = "favoritosContainer";
+        this.favoritosSection.className = "row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3 mb-4";
+
+        parent.insertBefore(favTitle, outrosTitle);
+        parent.insertBefore(this.favoritosSection, outrosTitle);
+    }
+
+    cleanupEmptyFavorites() {
+        if (!this.favoritosSection) return;
+
+        if (this.favoritosSection.querySelectorAll(".col").length === 0) {
+            const title = this.favoritosSection.previousElementSibling;
+            if (title?.querySelector("h3")?.textContent === "Favoritos") {
+                title.remove();
             }
-        });
-    });
+            this.favoritosSection.remove();
+            this.favoritosSection = null;
+        }
+    }
+}
 
-    myModal.addEventListener('shown.bs.modal', () => messageEl.focus());
-    myModal.addEventListener('hidden.bs.modal', () => {
-        delete btnSave.dataset.id;
-        messageEl.value = '';
-    });
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    new ModalRecado();
+    new FavoritosManager();
 });

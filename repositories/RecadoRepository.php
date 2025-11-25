@@ -58,10 +58,31 @@ class RecadoRepository {
         return null;
     }
 
-    public function updateStatus(int $id, int $status): bool {
+    public function updateStatus(int $id, int $status) {
         $stmt = $this->db->prepare("UPDATE recados SET status = ? WHERE id = ?");
         $stmt->bind_param("ii", $status, $id);
-        return $stmt->execute();
+        $stmt->execute();
+    }
+    
+    public function favorites(): array {
+        $items = [];
+        $result = $this->db->query("SELECT id, mensagem, data_criacao, status FROM recados WHERE status = 1 ORDER BY id DESC");
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $items[] = new Recado((int)$row['id'], $row['mensagem'], $row['data_criacao'], (int)$row['status']);
+            }
+        }
+        return $items;
     }
 
+    public function nonFavorites(): array {
+        $items = [];
+        $result = $this->db->query("SELECT id, mensagem, data_criacao, status FROM recados WHERE status = 0 ORDER BY id DESC");
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $items[] = new Recado((int)$row['id'], $row['mensagem'], $row['data_criacao'], (int)$row['status']);
+            }
+        }
+        return $items;
+    }
 }
